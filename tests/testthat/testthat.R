@@ -1,4 +1,4 @@
 library(testthat)
-library(twelvedays)
+library(stats331lab7)
 
-test_check("twelvedays")
+test_check("stats331lab7")

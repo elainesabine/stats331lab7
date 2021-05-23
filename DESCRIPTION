@@ -1,5 +1,5 @@
-Package: twelvedays
-Title: Sing the 12 Days of Christmas
+Package: stats331lab7
+Title: Mean
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Kelly",
