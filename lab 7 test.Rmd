@@ -1,0 +1,126 @@
+---
+title: "test lab7"
+author: "Elaine Sabine Pranadjaya"
+date: "5/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, include=FALSE}
+library(tidyverse)
+library(purrr)
+library(stringr)
+library(glue)
+library(dplyr)
+```
+
+```{r}
+xmas <- read.csv("https://www.dropbox.com/s/e584pryn8evm1gz/xmas.csv?dl=1")
+xmas2 <- read.csv("https://www.dropbox.com/s/ap2hqssese1ki4j/xmas_2.csv?dl=1")
+```
+
+```{r}
+pluralize_gift <- function(gift){
+  gift <- case_when(
+      str_detect(gift, "y$") ~ str_replace(gift, "y$", "ies"),
+      str_detect(gift, "oo") ~ str_replace(gift, "oo", "ee"),
+      TRUE ~ str_c(gift, "s"))
+  return(gift)
+}
+
+# xmas$Gift.Item <- pluralize_gift(xmas$Gift.Item)
+# 
+# purrr::map_chr(xmas$Gift.Item, pluralize_gift)
+```
+
+```{r}
+
+make_phrase <- function(num, num_word, item, verb, adjective, location){
+  verb <- str_replace_na(verb, "")
+  adjective <- str_replace_na(adjective, "")
+  location <- str_replace_na(location, "")
+
+    
+  ## pluralize items except day 1 item
+  plural_item <- case_when(num == 1 ~ item,
+                           TRUE ~ pluralize_gift(item))
+  
+  ## get the correct num_word
+  num_word <- case_when(
+    num == 12 ~ "Twelve",
+    num == 11 ~ "Eleven",
+    num == 10 ~ "Ten",
+    num == 9 ~ "Nine",
+    num == 8 ~ "Eight",
+    num == 7 ~ "Seven",
+    num == 6 ~ "Six",
+    num == 5 ~ "Five",
+    num == 4 ~ "Four",
+    num == 3 ~ "Three",
+    num == 2 ~ "Two",
+    num == 1 & str_detect(item, "^[aeiou]") ~ "an",
+    TRUE ~ "a"
+  )
+  
+  phrase <- str_c(num_word, adjective, plural_item, verb, location, sep = " ")
+  phrase <- str_squish(phrase)
+  
+  ## add punctuation
+  phrase <- case_when(
+    num == 1 ~ paste(phrase, ".", sep=""),
+    TRUE ~ paste(phrase, ",", sep="")
+  )
+  return(phrase)
+}
+
+# xmas <- xmas %>%
+#   mutate(
+#     Full.Phrase = pmap_chr(xmas, ~make_phrase(..1, ..2, ..3, ..4, ..5, ..6))
+#   )
+# 
+# xmas2 <- xmas2 %>%
+#   mutate(
+#     Full.Phrase = pmap_chr(xmas2, ~make_phrase(..1, ..2, ..3, ..4, ..5, ..6))
+#   )
+```
+
+
+```{r}
+sing_day <- function(dataset, line, phrase_col){
+  ## create the first line of the song
+  day <- dataset %>%
+    filter(Day == line)
+  day <- day[[2]]
+  line1 <- str_c( "On the ", day, " day of Christmas, my true love sent to me,")
+
+
+  ## filter relevant phrases
+  phrases <- dataset %>%
+    filter(Day <= line) %>%
+    arrange(desc(Day)) %>%
+    pull({{phrase_col}})
+  
+  phrases[[length(phrases)]] <- case_when(
+    line != 1 ~ paste("and ", phrases[[length(phrases)]], sep = ""),
+    TRUE ~ phrases[[length(phrases)]]
+  )
+  
+  ## combine all the lines
+  song <- c(line1, phrases)
+  song <- paste(song,collapse="\n")
+  song <- str_glue(song, "\n")[[1]]
+  return(song)
+}
+
+xmas2 <- xmas2 %>%
+  mutate(
+    Full.Phrase = pmap_chr(xmas2, ~make_phrase(..1, ..2, ..3, ..4, ..5, ..6))
+  )
+
+map_chr(1:12, ~sing_day(xmas2, .x, Full.Phrase)) %>%
+  cat(sep="\n\n")
+```
+
